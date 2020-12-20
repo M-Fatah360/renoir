@@ -395,6 +395,8 @@ struct Renoir_Handle
 			bool render_target;
 			RENOIR_MSAA_MODE msaa;
 			ID3D11Texture2D* render_color_buffer;
+
+			Renoir_Texture_Desc desc;
 		} texture;
 
 		struct
@@ -3726,6 +3728,7 @@ _renoir_dx11_texture_new(Renoir* api, Renoir_Texture_Desc desc)
 	h->texture.render_target = desc.render_target;
 	h->texture.msaa = desc.msaa;
 	h->texture.default_sampler_desc = desc.sampler;
+	h->texture.desc = desc;
 
 	auto command = _renoir_dx11_command_new(self, RENOIR_COMMAND_KIND_TEXTURE_NEW);
 	command->texture_new.handle = h;
@@ -3780,6 +3783,15 @@ _renoir_dx11_texture_size(Renoir* api, Renoir_Texture texture)
 	auto h = (Renoir_Handle*)texture.handle;
 	assert(h != nullptr && h->kind == RENOIR_HANDLE_KIND_TEXTURE);
 	return h->texture.size;
+}
+
+static Renoir_Texture_Desc
+_renoir_dx11_texture_desc(Renoir* api, Renoir_Texture texture)
+{
+	auto h = (Renoir_Handle*)texture.handle;
+	assert(h != nullptr);
+	assert(h->kind == RENOIR_HANDLE_KIND_TEXTURE);
+	return h->texture.desc;
 }
 
 static Renoir_Program
@@ -4681,6 +4693,7 @@ _renoir_load_api(Renoir* api)
 	api->texture_free = _renoir_dx11_texture_free;
 	api->texture_native_handle = _renoir_dx11_texture_native_handle;
 	api->texture_size = _renoir_dx11_texture_size;
+	api->texture_desc = _renoir_dx11_texture_desc;
 
 	api->program_new = _renoir_dx11_program_new;
 	api->program_free = _renoir_dx11_program_free;

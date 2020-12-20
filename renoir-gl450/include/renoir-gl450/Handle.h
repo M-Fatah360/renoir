@@ -92,6 +92,8 @@ struct Renoir_Handle
 			bool render_target;
 			RENOIR_MSAA_MODE msaa;
 			GLuint render_buffer[6];
+
+			Renoir_Texture_Desc desc;
 		} texture;
 
 		struct
