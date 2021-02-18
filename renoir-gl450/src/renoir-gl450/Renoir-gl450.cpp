@@ -369,7 +369,7 @@ _renoir_pixelformat_to_type_gl(RENOIR_PIXELFORMAT format)
 		res = GL_FLOAT;
 		break;
 	case RENOIR_PIXELFORMAT_D32:
-		res = GL_UNSIGNED_SHORT;
+		res = GL_FLOAT;
 		break;
 	case RENOIR_PIXELFORMAT_D24S8:
 		res = GL_UNSIGNED_INT_24_8;
@@ -1506,17 +1506,20 @@ _renoir_gl450_command_execute(IRenoir* self, Renoir_Command* command)
 		{
 			assert(depth->texture.desc.render_target);
 			_renoir_gl450_handle_ref(depth);
+
+			GLenum depth_attachment_type = depth->texture.desc.pixel_format == RENOIR_PIXELFORMAT_D32? GL_DEPTH_ATTACHMENT : GL_DEPTH_STENCIL_ATTACHMENT;
+
 			if (depth->texture.desc.cube_map == false)
 			{
 				if (depth->texture.desc.msaa != RENOIR_MSAA_MODE_NONE)
 				{
 					assert(desc.depth_stencil.level == 0 && "multisampled textures does not support mipmaps");
-					glNamedFramebufferRenderbuffer(h->raster_pass.fb, GL_DEPTH_STENCIL_ATTACHMENT,  GL_RENDERBUFFER, depth->texture.render_buffer[0]);
+					glNamedFramebufferRenderbuffer(h->raster_pass.fb, depth_attachment_type,  GL_RENDERBUFFER, depth->texture.render_buffer[0]);
 				}
 				else
 				{
 					assert(desc.depth_stencil.level < depth->texture.desc.mipmaps && "out of range mip level");
-					glNamedFramebufferTexture(h->raster_pass.fb, GL_DEPTH_STENCIL_ATTACHMENT, depth->texture.id, desc.depth_stencil.level);
+					glNamedFramebufferTexture(h->raster_pass.fb, depth_attachment_type, depth->texture.id, desc.depth_stencil.level);
 				}
 			}
 			else
@@ -1524,7 +1527,7 @@ _renoir_gl450_command_execute(IRenoir* self, Renoir_Command* command)
 				if (depth->texture.desc.msaa != RENOIR_MSAA_MODE_NONE)
 				{
 					assert(desc.depth_stencil.level == 0 && "multisampled textures does not support mipmaps");
-					glNamedFramebufferRenderbuffer(h->raster_pass.fb, GL_DEPTH_STENCIL_ATTACHMENT,  GL_RENDERBUFFER, depth->texture.render_buffer[desc.depth_stencil.subresource]);
+					glNamedFramebufferRenderbuffer(h->raster_pass.fb, depth_attachment_type,  GL_RENDERBUFFER, depth->texture.render_buffer[desc.depth_stencil.subresource]);
 				}
 				else
 				{
@@ -1532,7 +1535,7 @@ _renoir_gl450_command_execute(IRenoir* self, Renoir_Command* command)
 					glBindFramebuffer(GL_FRAMEBUFFER, h->raster_pass.fb);
 					glFramebufferTexture2D(
 						GL_FRAMEBUFFER,
-						GL_DEPTH_STENCIL_ATTACHMENT,
+						depth_attachment_type,
 						GL_TEXTURE_CUBE_MAP_POSITIVE_X + desc.depth_stencil.subresource,
 						depth->texture.id,
 						desc.depth_stencil.level
@@ -2121,16 +2124,18 @@ _renoir_gl450_command_execute(IRenoir* self, Renoir_Command* command)
 			auto depth = (Renoir_Handle*)h->raster_pass.offscreen.depth_stencil.texture.handle;
 			if (depth && depth->texture.desc.msaa != RENOIR_MSAA_MODE_NONE)
 			{
+				GLenum depth_attachment_type = depth->texture.desc.pixel_format == RENOIR_PIXELFORMAT_D32? GL_DEPTH_ATTACHMENT : GL_DEPTH_STENCIL_ATTACHMENT;
+
 				if (depth->texture.desc.cube_map == false)
 				{
-					glNamedFramebufferTexture(self->msaa_resolve_fb, GL_DEPTH_STENCIL_ATTACHMENT, depth->texture.id, 0);
+					glNamedFramebufferTexture(self->msaa_resolve_fb, depth_attachment_type, depth->texture.id, 0);
 				}
 				else
 				{
 					glBindFramebuffer(GL_FRAMEBUFFER, self->msaa_resolve_fb);
 					glFramebufferTexture2D(
 						GL_FRAMEBUFFER,
-						GL_DEPTH_STENCIL_ATTACHMENT,
+						depth_attachment_type,
 						GL_TEXTURE_CUBE_MAP_POSITIVE_X + h->raster_pass.offscreen.depth_stencil.subresource,
 						depth->texture.id,
 						0
@@ -2145,7 +2150,7 @@ _renoir_gl450_command_execute(IRenoir* self, Renoir_Command* command)
 					GL_NEAREST
 				);
 				// clear depth attachment
-				glNamedFramebufferTexture(self->msaa_resolve_fb, GL_DEPTH_STENCIL_ATTACHMENT, 0, 0);
+				glNamedFramebufferTexture(self->msaa_resolve_fb, depth_attachment_type, 0, 0);
 			}
 
 			if (scissor_enabled)
